@@ -8,6 +8,7 @@
 # TLP (another battery economy package)
 ###
 
+clear
 sudo bash -c 'echo "passive" > /sys/devices/system/cpu/intel_pstate/status'
 if [ $# = 0 ]; then # If no parameters are supplied, ask for them
     echo ""
