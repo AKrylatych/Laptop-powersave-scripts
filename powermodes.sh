@@ -15,7 +15,7 @@ init() {
     script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
     cfgpath="$script_dir/config.cfg"
     govs=($( cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors ))
-    norepeat=0
+    norepeat=1
 
     # Defines used colors
     yellow='\033[1;33m'
@@ -52,7 +52,6 @@ fileread() {
             enable_startup="ON"
             governor_selection_mode="SIMPLIFIED"
             filewrite
-            fileread
     fi
 }
 
@@ -125,6 +124,12 @@ main() {
                     ;;
         esac
     else
+        if [ $powermode = "startup" ]; then
+            if [ $enable_startup = "ON" ]; then
+                powermode="$default_governor"
+                modechange
+            fi
+        fi
         if [ "$powermode" = "opt" ]; then
             options
         elif [ "$powermode" = "ext" ]; then
@@ -137,7 +142,6 @@ main() {
                 elif [ $loopnum = ${#govs[@]} ]; then
                     printf "Wrong selection!"
                     sleep 1
-                    norepeat=1
                     printf "NOREPEAT "
                     main
                 fi
@@ -146,7 +150,7 @@ main() {
             if [ $norepeat = 1 ]; then
                 modechange
                 norepeat=0
-            fi
+            fi            
         fi
     fi
 }
