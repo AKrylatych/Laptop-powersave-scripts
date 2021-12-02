@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # This script is made to easily switch between performance and power economy modes with the terminal.
 # REQUIRES CPUFREQ TO WORK 
@@ -13,9 +13,18 @@ init() {
     # General variables
     arg1=$1
     script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-    cfgpath="$script_dir/config.cfg"
+
+    cfgdir="/home/$( ls /home )/.config/powergo"
+    cfgpath="$cfgdir/powergo.cfg"
+    
+    if [ ! -d $cfgdir ]; then
+        mkdir ~/.config/powergo/
+        printf "I am creating a directory, because $( test ! -d $cfgdir && echo dir doesnt exist )"
+    else
+        printf "I will not create a directory, because $( test -d $cfgdir && echo dir exists )"
+    fi
     govs=($( cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors ))
-    norepeat=1
+    norepeat=1   
 
     # Defines used colors
     yellow='\033[1;33m'
@@ -33,8 +42,16 @@ init() {
     threadcount="${#threadcount[@]}"
     
     # Reads/creates the config file and launches the main program
+    #debug
     fileread  
     main
+}
+
+debug() {
+    printf "\nI am: $(whoami)\n"
+    printf "i act from $script_dir\n"
+    printf "my cfgdir is $cfgdir\n"
+
 }
 
 fileread() {    
@@ -47,10 +64,11 @@ fileread() {
         local line=$( head -n 3 $cfgpath | tail -n +3 )
         governor_selection_mode=$line
     else
-            touch config.cfg
+            touch ~/.config/powergo/config.cfg
             default_governor="powersave"
             enable_startup="ON"
             governor_selection_mode="SIMPLIFIED"
+            echo "path: $cfgpath"
             filewrite
     fi
 }
@@ -76,8 +94,8 @@ main() {
         printf "Current power governor: ${yellow}$( cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor )${no_colour}\n"
         printf "Select your desired CPU power governor\n"
         if [ "$governor_selection_mode" = "SIMPLIFIED" ]; then
-            printf "${yellow}pwrs${no_colour}  - Enables power saving mode\n"
-            printf "${yellow}perf${no_colour}  - Enables performance mode\n"
+            printf "${yellow}pwr${no_colour}  - Enables power saving mode\n"
+            printf "${yellow}prf${no_colour}  - Enables performance mode\n"
             printf "${yellow}std${no_colour}   - Enables gradual scaling mode\n"
         else
             for i in "${govs[@]}"; do
@@ -86,7 +104,11 @@ main() {
         fi
         printf "${yellow}opt${no_colour}   - Opens the option menu\n"
         printf "${yellow}ext${no_colour}   - Exits the script\n"
-        read powermode
+        if [ "$governor_selection_mode" = "SIMPLIFIED" ]; then
+            read -n3 powermode
+        else 
+            read powermode
+        fi
     else
         powermode=$arg1
     fi
@@ -94,11 +116,11 @@ main() {
     # Changes the input to the governor name
     if [ "$governor_selection_mode" = "SIMPLIFIED" ]; then
         case $powermode in 
-            pwrs)
+            pwr)
                     powermode="powersave"
                     modechange 
                     ;;
-            perf)
+            prf)
                     powermode="performance"
                     modechange
                     ;;
@@ -181,9 +203,11 @@ options() {
     printf "\n"
     printf "Change Power governor [G]\n"
     printf "Change on startup [S]\n"
-    printf "Go back [B]\n"
-    printf "Enable/Disable simple selection menu [M]\n"    
-    read userinput
+    printf "Enable/Disable simple selection menu [M]\n"   
+    
+     
+    printf "\nGo back [B]\n"
+    read -n1 -s userinput
 
     # Handles the option changing
     case $userinput in
